@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"task-api/internal/model"
-	"task-api/internal/service"
+
+	"github.com/Pholluxion/task-api/internal/model"
+	"github.com/Pholluxion/task-api/internal/service"
 )
 
 type TaskHandler struct {

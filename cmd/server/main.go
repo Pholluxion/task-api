@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"task-api/internal/db"
-	"task-api/internal/service"
-	"task-api/internal/store"
-	"task-api/internal/transport"
-	"task-api/internal/transport/middlewares"
+	"github.com/Pholluxion/task-api/internal/db"
+	"github.com/Pholluxion/task-api/internal/service"
+	"github.com/Pholluxion/task-api/internal/store"
+	"github.com/Pholluxion/task-api/internal/transport"
+	"github.com/Pholluxion/task-api/internal/transport/middlewares"
 )
 
 func main() {

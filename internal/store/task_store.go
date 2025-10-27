@@ -2,8 +2,8 @@ package store
 
 import (
 	"context"
-	"task-api/internal/model"
 
+	"github.com/Pholluxion/task-api/internal/model"
 	"gorm.io/gorm"
 )
 

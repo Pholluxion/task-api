@@ -1,8 +1,7 @@
 package db
 
 import (
-	"task-api/internal/model"
-
+	"github.com/Pholluxion/task-api/internal/model"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )

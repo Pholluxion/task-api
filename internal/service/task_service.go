@@ -2,8 +2,9 @@ package service
 
 import (
 	"context"
-	"task-api/internal/model"
-	"task-api/internal/store"
+
+	"github.com/Pholluxion/task-api/internal/model"
+	"github.com/Pholluxion/task-api/internal/store"
 )
 
 type TaskService interface {
