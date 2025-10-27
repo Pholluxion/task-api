@@ -4,27 +4,40 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Pholluxion/task-api/internal/db"
+	"github.com/Pholluxion/task-api/internal/model"
 	"github.com/Pholluxion/task-api/internal/service"
 	"github.com/Pholluxion/task-api/internal/store"
 	"github.com/Pholluxion/task-api/internal/transport"
 	"github.com/Pholluxion/task-api/internal/transport/middlewares"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
+
+const DBName = "tasks.db"
 
 func main() {
 
-	db := db.New()
-	taskStore := store.New(db.DB)
+	db, err := gorm.Open(sqlite.Open(DBName), &gorm.Config{})
+
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	db.AutoMigrate(&model.Task{})
+
+	taskStore := store.New(db)
 	taskService := service.New(&taskStore)
 	taskHandler := transport.New(&taskService)
+	authHandler := transport.AuthHandler{}
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /tasks", taskHandler.GetAll)
-	mux.HandleFunc("GET /tasks/{id}", taskHandler.GetByID)
-	mux.HandleFunc("POST /tasks", taskHandler.Create)
-	mux.HandleFunc("PUT /tasks/{id}", taskHandler.Update)
-	mux.HandleFunc("DELETE /tasks/{id}", taskHandler.Delete)
+	mux.Handle("GET /tasks", middlewares.AuthMiddleware(http.HandlerFunc(taskHandler.GetAll)))
+	mux.Handle("GET /tasks/{id}", middlewares.AuthMiddleware(http.HandlerFunc(taskHandler.GetByID)))
+	mux.Handle("POST /tasks", middlewares.AuthMiddleware(http.HandlerFunc(taskHandler.Create)))
+	mux.Handle("PUT /tasks/{id}", middlewares.AuthMiddleware(http.HandlerFunc(taskHandler.Update)))
+	mux.Handle("DELETE /tasks/{id}", middlewares.AuthMiddleware(http.HandlerFunc(taskHandler.Delete)))
+	mux.HandleFunc("/login", authHandler.Login)
 
 	server := &http.Server{
 		Addr:    ":8080",

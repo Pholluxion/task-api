@@ -1,9 +1,11 @@
 package transport
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Pholluxion/task-api/internal/model"
 	"github.com/Pholluxion/task-api/internal/service"
@@ -18,7 +20,8 @@ func New(service *service.TaskService) *TaskHandler {
 }
 
 func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(15*time.Second))
+	defer cancel()
 	var task model.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -36,20 +39,20 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(15*time.Second))
+	defer cancel()
 	tasks, err := h.service.GetAll(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(tasks)
+	statusOK(w, tasks)
 }
 
 func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(15*time.Second))
+	defer cancel()
 	rawID := r.PathValue("id")
 	ID, err := strconv.Atoi(rawID)
 	if err != nil {
@@ -62,14 +65,13 @@ func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(task)
+	statusOK(w, task)
 
 }
 
 func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(15*time.Second))
+	defer cancel()
 	rawID := r.PathValue("id")
 	ID, err := strconv.Atoi(rawID)
 	if err != nil {
@@ -90,13 +92,12 @@ func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(t)
+	statusOK(w, t)
 }
 
 func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(15*time.Second))
+	defer cancel()
 	rawID := r.PathValue("id")
 	ID, err := strconv.Atoi(rawID)
 	if err != nil {
@@ -110,4 +111,10 @@ func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func statusOK(w http.ResponseWriter, data any) {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(data)
 }
