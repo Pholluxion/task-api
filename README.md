@@ -30,6 +30,7 @@ This is a simple Task Management API built with Go, and GORM. It allows users to
     export JWT_SECRET='your_jwt_secret_key'
     export PORT='8080'
     export DB_CONNECTION='tasks.db'
+    export TOKEN_EXPIRE_TIME='12' # in hours
     ```
 
 4. Run the application:

@@ -11,17 +11,18 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-type JWTUtils struct {
-	SecretKey []byte
+type JWTService struct {
+	TokenExpireTime int
+	SecretKey       []byte
 }
 
-func NewJWTUtils(secret string) *JWTUtils {
-	return &JWTUtils{
+func NewJWTService(secret string, expireTime int) *JWTService {
+	return &JWTService{
 		SecretKey: []byte(secret),
 	}
 }
 
-func (j *JWTUtils) CreateToken(username string) (string, error) {
+func (j *JWTService) CreateToken(username string) (string, error) {
 
 	c := Claims{
 		Username: username,
@@ -42,7 +43,7 @@ func (j *JWTUtils) CreateToken(username string) (string, error) {
 
 }
 
-func (j *JWTUtils) VerifyToken(tokenString string) (*jwt.Token, error) {
+func (j *JWTService) VerifyToken(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 		return j.SecretKey, nil
 	})

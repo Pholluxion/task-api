@@ -39,7 +39,7 @@ func CORSMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func AuthMiddleware(jwtUtils *utils.JWTUtils) func(http.Handler) http.Handler {
+func AuthMiddleware(jwtUtils *utils.JWTService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

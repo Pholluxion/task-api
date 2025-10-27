@@ -9,12 +9,12 @@ import (
 )
 
 type AuthHandler struct {
-	jwtUtils *utils.JWTUtils
+	jwtService *utils.JWTService
 }
 
-func NewAuthHandler(jwtUtils *utils.JWTUtils) *AuthHandler {
+func NewAuthHandler(jwtUtils *utils.JWTService) *AuthHandler {
 	return &AuthHandler{
-		jwtUtils: jwtUtils,
+		jwtService: jwtUtils,
 	}
 }
 
@@ -38,7 +38,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.jwtUtils.CreateToken(username)
+	token, err := h.jwtService.CreateToken(username)
 
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "Internal Server Error")

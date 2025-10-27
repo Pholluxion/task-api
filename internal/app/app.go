@@ -23,7 +23,11 @@ type App struct {
 
 func New() (*App, error) {
 	config := config.NewConfig()
-	jwtUtils := utils.NewJWTUtils(config.SecretKey)
+
+	jwtService := utils.NewJWTService(
+		config.SecretKey,
+		config.TokenExpireTime,
+	)
 
 	db, err := gorm.Open(sqlite.Open(config.DBName), &gorm.Config{})
 
@@ -38,7 +42,7 @@ func New() (*App, error) {
 	taskStore := store.New(db)
 	taskService := service.New(&taskStore)
 	taskHandler := transport.NewTaskHandler(&taskService)
-	authHandler := transport.NewAuthHandler(jwtUtils)
+	authHandler := transport.NewAuthHandler(jwtService)
 
 	r := router.New()
 
@@ -50,7 +54,7 @@ func New() (*App, error) {
 
 	// Rutas privadas
 	api := r.Group("/api")
-	api.Use(middlewares.AuthMiddleware(jwtUtils))
+	api.Use(middlewares.AuthMiddleware(jwtService))
 
 	api.Get("/tasks", taskHandler.GetAll)
 	api.Get("/tasks/{id}", taskHandler.GetByID)
