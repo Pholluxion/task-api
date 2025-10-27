@@ -12,6 +12,7 @@ import (
 	"github.com/Pholluxion/task-api/internal/transport"
 	"github.com/Pholluxion/task-api/internal/transport/middlewares"
 	"github.com/Pholluxion/task-api/internal/transport/router"
+	"github.com/Pholluxion/task-api/internal/utils"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -22,6 +23,7 @@ type App struct {
 
 func New() (*App, error) {
 	config := config.NewConfig()
+	jwtUtils := utils.NewJWTUtils(config.SecretKey)
 
 	db, err := gorm.Open(sqlite.Open(config.DBName), &gorm.Config{})
 
@@ -36,7 +38,7 @@ func New() (*App, error) {
 	taskStore := store.New(db)
 	taskService := service.New(&taskStore)
 	taskHandler := transport.NewTaskHandler(&taskService)
-	authHandler := transport.NewAuthHandler(&config.JWTUtils)
+	authHandler := transport.NewAuthHandler(jwtUtils)
 
 	r := router.New()
 
@@ -48,7 +50,7 @@ func New() (*App, error) {
 
 	// Rutas privadas
 	api := r.Group("/api")
-	api.Use(middlewares.AuthMiddleware(&config.JWTUtils))
+	api.Use(middlewares.AuthMiddleware(jwtUtils))
 
 	api.Get("/tasks", taskHandler.GetAll)
 	api.Get("/tasks/{id}", taskHandler.GetByID)

@@ -3,9 +3,9 @@ package config
 import "github.com/Pholluxion/task-api/internal/utils"
 
 type Config struct {
-	DBName string
-	Port   string
-	utils.JWTUtils
+	DBName    string
+	Port      string
+	SecretKey string
 }
 
 func NewConfig() *Config {
@@ -14,10 +14,8 @@ func NewConfig() *Config {
 	JWTSecret := utils.GetString("JWT_SECRET", "your_secret_key")
 
 	return &Config{
-		JWTUtils: utils.JWTUtils{
-			SecretKey: []byte(JWTSecret),
-		},
-		DBName: DBName,
-		Port:   Port,
+		SecretKey: JWTSecret,
+		DBName:    DBName,
+		Port:      Port,
 	}
 }
