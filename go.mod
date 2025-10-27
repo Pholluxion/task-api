@@ -1,4 +1,4 @@
-module task-api
+module github.com/Pholluxion/task-api
 
 go 1.25.1
 
