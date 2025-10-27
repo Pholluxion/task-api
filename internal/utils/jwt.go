@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,10 +11,17 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func CreateToken(username string) (string, error) {
+type JWTUtils struct {
+	SecretKey []byte
+}
 
-	var JWT_SECRET = GetString("JWT_SECRET", "")
-	var secretKey = []byte(JWT_SECRET)
+func NewJWTUtils(secret string) *JWTUtils {
+	return &JWTUtils{
+		SecretKey: []byte(secret),
+	}
+}
+
+func (j *JWTUtils) CreateToken(username string) (string, error) {
 
 	c := Claims{
 		Username: username,
@@ -27,9 +33,7 @@ func CreateToken(username string) (string, error) {
 
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
 
-	fmt.Println("Secret Key:", string(secretKey))
-
-	tokenString, err := claims.SignedString(secretKey)
+	tokenString, err := claims.SignedString(j.SecretKey)
 	if err != nil {
 		return "", err
 	}
@@ -38,11 +42,9 @@ func CreateToken(username string) (string, error) {
 
 }
 
-func VerifyToken(tokenString string) (*jwt.Token, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		var JWT_SECRET = GetString("JWT_SECRET", "")
-		var secretKey = []byte(JWT_SECRET)
-		return secretKey, nil
+func (j *JWTUtils) VerifyToken(tokenString string) (*jwt.Token, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
+		return j.SecretKey, nil
 	})
 
 	if err != nil {

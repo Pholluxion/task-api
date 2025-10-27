@@ -2,20 +2,19 @@ package transport
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/Pholluxion/task-api/internal/model"
 	"github.com/Pholluxion/task-api/internal/service"
+	"github.com/Pholluxion/task-api/internal/transport/httpx"
 )
 
 type TaskHandler struct {
 	service service.TaskService
 }
 
-func New(service *service.TaskService) *TaskHandler {
+func NewTaskHandler(service *service.TaskService) *TaskHandler {
 	return &TaskHandler{service: *service}
 }
 
@@ -23,18 +22,16 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(15*time.Second))
 	defer cancel()
 	var task model.Task
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := httpx.Decode(r, &task); err != nil {
+		httpx.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	createdTask, err := h.service.Create(ctx, &task)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(createdTask)
+	httpx.JSON(w, http.StatusCreated, createdTask)
 
 }
 
@@ -43,78 +40,73 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	tasks, err := h.service.GetAll(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	statusOK(w, tasks)
+	httpx.JSON(w, http.StatusOK, tasks)
 }
 
 func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(15*time.Second))
 	defer cancel()
-	rawID := r.PathValue("id")
-	ID, err := strconv.Atoi(rawID)
+
+	id, err := httpx.ParamID(r)
+
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		httpx.Error(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+	task, err := h.service.GetByID(ctx, id)
+
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	task, err := h.service.GetByID(ctx, uint(ID))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	statusOK(w, task)
-
+	httpx.JSON(w, http.StatusOK, task)
 }
 
 func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(15*time.Second))
 	defer cancel()
-	rawID := r.PathValue("id")
-	ID, err := strconv.Atoi(rawID)
+
+	id, err := httpx.ParamID(r)
+
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
 	var task model.Task
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := httpx.Decode(r, &task); err != nil {
+		httpx.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	t, err := h.service.Update(ctx, uint(ID), task)
+	t, err := h.service.Update(ctx, id, task)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	statusOK(w, t)
+	httpx.JSON(w, http.StatusOK, t)
 }
 
 func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(15*time.Second))
 	defer cancel()
-	rawID := r.PathValue("id")
-	ID, err := strconv.Atoi(rawID)
+	id, err := httpx.ParamID(r)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		httpx.Error(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
-	if err := h.service.Delete(ctx, uint(ID)); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := h.service.Delete(ctx, id); err != nil {
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func statusOK(w http.ResponseWriter, data any) {
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(data)
+	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Task deleted successfully"})
 }

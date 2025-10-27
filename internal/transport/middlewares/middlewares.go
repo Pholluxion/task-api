@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Pholluxion/task-api/internal/transport/httpx"
 	"github.com/Pholluxion/task-api/internal/utils"
 )
 
@@ -38,22 +39,27 @@ func CORSMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
+func AuthMiddleware(jwtUtils *utils.JWTUtils) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			authHeader := r.Header.Get("Authorization")
 
-		token, err := utils.VerifyToken(tokenString)
-		if err != nil || !token.Valid {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
+			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+				httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+				return
+			}
 
-		next.ServeHTTP(w, r)
-	})
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+			token, err := jwtUtils.VerifyToken(tokenString)
+
+			if err != nil || !token.Valid {
+				httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }
