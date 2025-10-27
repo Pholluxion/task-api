@@ -13,7 +13,7 @@ func NewConfig() *Config {
 	Port := utils.GetString("PORT", "8080")
 	DBName := utils.GetString("DB_NAME", "tasks.db")
 	JWTSecret := utils.GetString("JWT_SECRET", "your_secret_key")
-	TokenExpireTime := utils.GetInt("TOKEN_EXPIRE_TIME", 12)
+	TokenExpireTime := utils.GetInt("TOKEN_EXPIRE_TIME", 30)
 
 	return &Config{
 		SecretKey:       JWTSecret,

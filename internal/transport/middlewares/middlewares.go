@@ -1,65 +1,46 @@
 package middlewares
 
 import (
-	"log"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/Pholluxion/task-api/internal/transport/httpx"
 	"github.com/Pholluxion/task-api/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		if strings.HasPrefix(r.URL.Path, "/assets/") || r.URL.Path == "/" {
-			next.ServeHTTP(w, r)
-			return
-		}
-		start := time.Now()
-		log.Printf("➡️  %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
-		next.ServeHTTP(w, r)
-		log.Printf("✅ Completed in %v", time.Since(start))
-	})
-}
-
-func CORSMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusOK)
 			return
 		}
 
-		next.ServeHTTP(w, r)
-	})
+		c.Next()
+	}
 }
 
-func AuthMiddleware(jwtUtils *utils.JWTService) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func AuthMiddleware(jwtUtils *utils.JWTService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.Request.Header.Get("Authorization")
 
-			authHeader := r.Header.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
 
-			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-				httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
-				return
-			}
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		token, err := jwtUtils.VerifyToken(tokenString)
 
-			token, err := jwtUtils.VerifyToken(tokenString)
+		if err != nil || !token.Valid {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
 
-			if err != nil || !token.Valid {
-				httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
+		c.Next()
 	}
 }

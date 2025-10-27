@@ -3,7 +3,6 @@ package app
 import (
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/Pholluxion/task-api/internal/config"
 	"github.com/Pholluxion/task-api/internal/model"
@@ -11,14 +10,15 @@ import (
 	"github.com/Pholluxion/task-api/internal/store"
 	"github.com/Pholluxion/task-api/internal/transport"
 	"github.com/Pholluxion/task-api/internal/transport/middlewares"
-	"github.com/Pholluxion/task-api/internal/transport/router"
 	"github.com/Pholluxion/task-api/internal/utils"
+	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 type App struct {
-	Server *http.Server
+	Router *gin.Engine
+	Port   string
 }
 
 func New() (*App, error) {
@@ -44,32 +44,24 @@ func New() (*App, error) {
 	taskHandler := transport.NewTaskHandler(&taskService)
 	authHandler := transport.NewAuthHandler(jwtService)
 
-	r := router.New()
+	router := gin.Default()
 
-	r.Use(middlewares.LoggingMiddleware, middlewares.CORSMiddleware)
-
+	router.Use(middlewares.CORSMiddleware())
+	router.GET("/login", authHandler.Login())
 	// Rutas públicas
-	auth := r.Group("/auth")
-	auth.Get("/login", authHandler.Login)
-
-	// Rutas privadas
-	api := r.Group("/api")
-	api.Use(middlewares.AuthMiddleware(jwtService))
-
-	api.Get("/tasks", taskHandler.GetAll)
-	api.Get("/tasks/{id}", taskHandler.GetByID)
-	api.Post("/tasks", taskHandler.Create)
-	api.Put("/tasks/{id}", taskHandler.Update)
-	api.Delete("/tasks/{id}", taskHandler.Delete)
-
-	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", config.Port),
-		Handler: r.Handler(),
+	authorized := router.Group("/api")
+	authorized.Use(middlewares.AuthMiddleware(jwtService))
+	{
+		authorized.GET("/tasks", taskHandler.GetAll())
+		authorized.GET("/tasks/:id", taskHandler.GetByID())
+		authorized.POST("/tasks", taskHandler.Create())
+		authorized.PUT("/tasks/:id", taskHandler.Update())
+		authorized.DELETE("/tasks/:id", taskHandler.Delete())
 	}
-	return &App{Server: server}, nil
+
+	return &App{Router: router, Port: config.Port}, nil
 }
 
 func (a *App) Start() error {
-	fmt.Println("✅ Server started on http://localhost:8080")
-	return a.Server.ListenAndServe()
+	return a.Router.Run(fmt.Sprintf(":%s", a.Port))
 }
