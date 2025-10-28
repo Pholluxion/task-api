@@ -10,7 +10,6 @@ import (
 	"github.com/Pholluxion/task-api/internal/store"
 	"github.com/Pholluxion/task-api/internal/transport"
 	"github.com/Pholluxion/task-api/internal/transport/middlewares"
-	"github.com/Pholluxion/task-api/internal/utils"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -24,33 +23,32 @@ type App struct {
 func New() (*App, error) {
 	config := config.NewConfig()
 
-	jwtService := utils.NewJWTService(
-		config.SecretKey,
-		config.TokenExpireTime,
-	)
-
 	db, err := gorm.Open(sqlite.Open(config.DBName), &gorm.Config{})
 
 	if err != nil {
 		return nil, errors.New("failed to connect database")
 	}
 
-	if err := db.AutoMigrate(&model.Task{}); err != nil {
+	if err := db.AutoMigrate(&model.Task{}, &model.User{}); err != nil {
 		return nil, err
 	}
 
 	taskStore := store.New(db)
+	userStore := store.NewUserStore(db)
+
 	taskService := service.New(&taskStore)
+	authService := service.NewAuthService(userStore, config.TokenExpireTime, []byte(config.SecretKey))
 	taskHandler := transport.NewTaskHandler(&taskService)
-	authHandler := transport.NewAuthHandler(jwtService)
+	authHandler := transport.NewAuthHandler(authService)
 
 	router := gin.Default()
 
-	router.Use(middlewares.CORSMiddleware())
-	router.GET("/login", authHandler.Login())
-	// Rutas públicas
+	router.Use(middlewares.AllowCORS())
+	router.GET("/token", authHandler.Login())
+	router.POST("/register", authHandler.Register())
+
 	authorized := router.Group("/api")
-	authorized.Use(middlewares.AuthMiddleware(jwtService))
+	authorized.Use(middlewares.JWTAuthMiddleware(authService))
 	{
 		authorized.GET("/tasks", taskHandler.GetAll())
 		authorized.GET("/tasks/:id", taskHandler.GetByID())

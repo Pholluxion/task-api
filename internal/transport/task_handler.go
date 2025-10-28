@@ -1,11 +1,12 @@
 package transport
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/Pholluxion/task-api/internal/model"
 	"github.com/Pholluxion/task-api/internal/service"
-	"github.com/Pholluxion/task-api/internal/transport/httpx"
 	"github.com/gin-gonic/gin"
 )
 
@@ -51,14 +52,16 @@ func (h *TaskHandler) GetAll() gin.HandlerFunc {
 func (h *TaskHandler) GetByID() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
-		id, err := httpx.ParamID(ctx.Request)
+		idStr := ctx.Param("id")
+		id, err := strconv.Atoi(idStr)
 
 		if err != nil {
+			fmt.Println(err)
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 			return
 		}
 
-		task, err := h.service.GetByID(ctx, id)
+		task, err := h.service.GetByID(ctx, uint(id))
 
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -72,7 +75,8 @@ func (h *TaskHandler) GetByID() gin.HandlerFunc {
 func (h *TaskHandler) Update() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
-		id, err := httpx.ParamID(ctx.Request)
+		idStr := ctx.Param("id")
+		id, err := strconv.Atoi(idStr)
 
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
@@ -86,27 +90,30 @@ func (h *TaskHandler) Update() gin.HandlerFunc {
 			return
 		}
 
-		t, err := h.service.Update(ctx, id, task)
+		t, err := h.service.Update(ctx, uint(id), task)
 
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		ctx.JSON(http.StatusOK, t)
+		ctx.JSON(http.StatusOK, gin.H{"updated": t})
 	}
 
 }
 
 func (h *TaskHandler) Delete() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		id, err := httpx.ParamID(ctx.Request)
+
+		idStr := ctx.Param("id")
+		id, err := strconv.Atoi(idStr)
+
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 			return
 		}
 
-		if err := h.service.Delete(ctx, id); err != nil {
+		if err := h.service.Delete(ctx, uint(id)); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

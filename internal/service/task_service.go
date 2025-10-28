@@ -11,7 +11,7 @@ type TaskService interface {
 	GetAll(ctx context.Context) ([]model.Task, error)
 	GetByID(ctx context.Context, id uint) (*model.Task, error)
 	Create(ctx context.Context, task *model.Task) (*model.Task, error)
-	Update(ctx context.Context, id uint, task model.Task) (*model.Task, error)
+	Update(ctx context.Context, id uint, task model.Task) (bool, error)
 	Delete(ctx context.Context, id uint) error
 }
 
@@ -34,7 +34,7 @@ func (s *taskService) Create(ctx context.Context, task *model.Task) (*model.Task
 	return s.store.Create(ctx, task)
 }
 
-func (s *taskService) Update(ctx context.Context, id uint, task model.Task) (*model.Task, error) {
+func (s *taskService) Update(ctx context.Context, id uint, task model.Task) (bool, error) {
 	return s.store.Update(ctx, id, task)
 }
 

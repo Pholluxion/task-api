@@ -11,7 +11,7 @@ type TaskStore interface {
 	GetAll(ctx context.Context) ([]model.Task, error)
 	GetByID(ctx context.Context, id uint) (*model.Task, error)
 	Create(ctx context.Context, task *model.Task) (*model.Task, error)
-	Update(ctx context.Context, id uint, task model.Task) (*model.Task, error)
+	Update(ctx context.Context, id uint, task model.Task) (bool, error)
 	Delete(ctx context.Context, id uint) error
 }
 
@@ -46,18 +46,15 @@ func (s *taskStore) Create(ctx context.Context, task *model.Task) (*model.Task, 
 	return task, nil
 }
 
-func (s *taskStore) Update(ctx context.Context, id uint, updated model.Task) (*model.Task, error) {
-	res, err := gorm.G[model.Task](s.db).Where("id = ?", id).Select("*").Updates(ctx, updated)
+func (s *taskStore) Update(ctx context.Context, id uint, updated model.Task) (bool, error) {
+	rows, err := gorm.G[model.Task](s.db).Where("id = ?", id).
+		Updates(ctx, model.Task{Name: updated.Name, Status: updated.Status})
 
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	if res == 0 {
-		return nil, gorm.ErrRecordNotFound
-	}
-
-	return &updated, nil
+	return rows > 0, nil
 }
 
 func (s *taskStore) Delete(ctx context.Context, id uint) error {
