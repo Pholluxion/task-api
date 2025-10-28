@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Pholluxion/task-api/internal/service"
+	"github.com/Pholluxion/task-api/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,7 +23,7 @@ func AllowCORS() gin.HandlerFunc {
 	}
 }
 
-func JWTAuthMiddleware(auth service.AuthService) gin.HandlerFunc {
+func JWTAuthMiddleware(jwtUtil utils.JWTUtil) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 
@@ -34,7 +34,7 @@ func JWTAuthMiddleware(auth service.AuthService) gin.HandlerFunc {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		token, err := auth.VerifyToken(tokenString)
+		token, err := jwtUtil.ValidateToken(tokenString)
 
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})

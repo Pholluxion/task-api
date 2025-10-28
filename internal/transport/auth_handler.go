@@ -5,16 +5,19 @@ import (
 
 	"github.com/Pholluxion/task-api/internal/model"
 	"github.com/Pholluxion/task-api/internal/service"
+	"github.com/Pholluxion/task-api/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {
 	authService service.AuthService
+	jwtUtil     utils.JWTUtil
 }
 
-func NewAuthHandler(authService service.AuthService) *AuthHandler {
+func NewAuthHandler(authService service.AuthService, jwtUtil utils.JWTUtil) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
+		jwtUtil:     jwtUtil,
 	}
 }
 
@@ -34,7 +37,7 @@ func (h *AuthHandler) Login() gin.HandlerFunc {
 			return
 		}
 
-		token, err := h.authService.CreateToken(username)
+		token, err := h.jwtUtil.GenerateToken(username)
 
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})

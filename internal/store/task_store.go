@@ -19,7 +19,7 @@ type taskStore struct {
 	db *gorm.DB
 }
 
-func New(db *gorm.DB) TaskStore {
+func NewTaskStore(db *gorm.DB) TaskStore {
 	return &taskStore{db: db}
 }
 

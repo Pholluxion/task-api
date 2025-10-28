@@ -30,7 +30,7 @@ This is a simple Task Management API built with Go, and GORM. It allows users to
     export JWT_SECRET='your_jwt_secret_key'
     export PORT='8080'
     export DB_CONNECTION='tasks.db'
-    export TOKEN_EXPIRE_TIME='12' # in hours
+    export TOKEN_EXPIRE_TIME='60' # in minutes
     ```
 
 4. Run the application:
@@ -46,9 +46,9 @@ openssl rand -hex 32
 
 ## API Endpoints
 - `POST /register` - Register a new user
-- `POST /login` - Login and receive a JWT token
-- `GET /tasks` - Get all tasks (requires authentication)
-- `POST /tasks` - Create a new task (requires authentication)
-- `PUT /tasks/:id` - Update a task (requires authentication)
-- `DELETE /tasks/:id` - Delete a task (requires authentication)
+- `POST /token` - Authenticate and get a JWT token
+- `GET /api/tasks` - Get all tasks (requires authentication)
+- `POST /api/tasks` - Create a new task (requires authentication)
+- `PUT /api/tasks/:id` - Update a task (requires authentication)
+- `DELETE /api/tasks/:id` - Delete a task (requires authentication)
 

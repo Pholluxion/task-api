@@ -10,6 +10,7 @@ import (
 	"github.com/Pholluxion/task-api/internal/store"
 	"github.com/Pholluxion/task-api/internal/transport"
 	"github.com/Pholluxion/task-api/internal/transport/middlewares"
+	"github.com/Pholluxion/task-api/internal/utils"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -22,6 +23,7 @@ type App struct {
 
 func New() (*App, error) {
 	config := config.NewConfig()
+	jwtUtil := utils.NewJWTUtil(config.SecretKey, config.TokenExpireTime)
 
 	db, err := gorm.Open(sqlite.Open(config.DBName), &gorm.Config{})
 
@@ -33,13 +35,13 @@ func New() (*App, error) {
 		return nil, err
 	}
 
-	taskStore := store.New(db)
+	taskStore := store.NewTaskStore(db)
 	userStore := store.NewUserStore(db)
 
-	taskService := service.New(&taskStore)
-	authService := service.NewAuthService(userStore, config.TokenExpireTime, []byte(config.SecretKey))
+	taskService := service.NewTaskService(&taskStore)
+	authService := service.NewAuthService(userStore)
 	taskHandler := transport.NewTaskHandler(&taskService)
-	authHandler := transport.NewAuthHandler(authService)
+	authHandler := transport.NewAuthHandler(authService, jwtUtil)
 
 	router := gin.Default()
 
@@ -48,7 +50,7 @@ func New() (*App, error) {
 	router.POST("/register", authHandler.Register())
 
 	authorized := router.Group("/api")
-	authorized.Use(middlewares.JWTAuthMiddleware(authService))
+	authorized.Use(middlewares.JWTAuthMiddleware(jwtUtil))
 	{
 		authorized.GET("/tasks", taskHandler.GetAll())
 		authorized.GET("/tasks/:id", taskHandler.GetByID())
