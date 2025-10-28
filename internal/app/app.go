@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/Pholluxion/task-api/internal/config"
 	"github.com/Pholluxion/task-api/internal/model"
@@ -17,8 +18,7 @@ import (
 )
 
 type App struct {
-	Router *gin.Engine
-	Port   string
+	Server *http.Server
 }
 
 func New() (*App, error) {
@@ -59,9 +59,10 @@ func New() (*App, error) {
 		authorized.DELETE("/tasks/:id", taskHandler.Delete())
 	}
 
-	return &App{Router: router, Port: config.Port}, nil
-}
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%s", config.Port),
+		Handler: router.Handler(),
+	}
 
-func (a *App) Start() error {
-	return a.Router.Run(fmt.Sprintf(":%s", a.Port))
+	return &App{Server: server}, nil
 }
